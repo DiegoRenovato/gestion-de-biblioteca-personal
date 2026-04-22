@@ -24,12 +24,21 @@ struct Item{
 void menu(Item **coleccion, int *cantidad);
 void agregarItem(Item **coleccion, int *cantidad, int n);
 void mostrarItems(Item *coleccion, int cantidad);
+void guardarArchivo(Item *coleccion, int cantidad);
+void cargarArchivo(Item **coleccion, int *cantidad);
 
 int main(int argc, char *argv[]){
     Item *coleccion = NULL;
     int cantidad = 0;
 
+    //1. Cargar archivo (puede que no haya datos previos, o datos cargados correctamente)
+    cargarArchivo(&coleccion, &cantidad);
+
+    //2. Llamar al menu
     menu(&coleccion, &cantidad);
+
+    //3. Liberar memoria
+    free(coleccion);
 
     return 0;
 }
@@ -39,6 +48,13 @@ void menu(Item **coleccion, int *cantidad){
     int opc, n=0;
 
     do{
+        printf("MENU\n\n");
+        printf("1. Agregar Nuevo Item\n");
+        printf("2. Buscar Item (No disponible por el momento)\n");
+        printf("3. Mostrar Todos\n");
+        printf("4. Modificar Item (No disponible por el momento)\n");
+        printf("5. Eliminar Item (No disponible por el momento)\n");
+        printf("6. Guardar y salir\n");
         printf("Seleccione una opcion: ");
         scanf("%d", &opc);
 
@@ -50,13 +66,33 @@ void menu(Item **coleccion, int *cantidad){
             break;
 
         case 2:
-        printf("MOSTRANDO ITEMS\n");
-        mostrarItems(*coleccion, *cantidad);
+            printf("Buscar Item (No disponible por el momento)\n");
+            break;
+
+        case 3:
+            printf("MOSTRANDO ITEMS\n");
+            mostrarItems(*coleccion, *cantidad);
+            break;
+
+        case 4:
+            printf("Modificar Item (No disponible por el momento)\n");
+            break;
+
+        case 5:
+            printf("Eliminar Item (No disponible por el momento)\n");
+            break;
+
+        case 6:
+            guardarArchivo(*coleccion, *cantidad);
+            printf("Saliendo...\n");
+            system("pause");
+            break;
         
         default:
+            printf("Opcion no valida. Ingrese una opcion disponible nuevamente\n");
             break;
         }
-    }while(opc != 5);
+    }while(opc != 6);
 }
 
 void agregarItem(Item **coleccion, int *cantidad, int n){
@@ -108,7 +144,7 @@ void agregarItem(Item **coleccion, int *cantidad, int n){
 }
 
 void mostrarItems(Item *coleccion, int cantidad){
-    printf("\n%-5s %-20s %-15s %-6s %-15s %-12s\n",
+    printf("\n%-5s %-20s %-15s %-6s %-15s %-12s\n",     //Formatear la salida de texto, despues sera modificado
             "ID", "TITULO", "AUTOR", "ANIO", "GENERO", "ESTADO");
 
     printf("------------------------------------------------------------------------\n");
@@ -127,4 +163,70 @@ void mostrarItems(Item *coleccion, int cantidad){
         }
     }
     printf("\n");
+}
+
+void guardarArchivo(Item *coleccion, int cantidad){
+    //Creamos un archivo binario llamado "gestionBiblioteca.dat", Modo "wb = write binary" (Escritura y binario)
+    FILE *f = fopen("gestionBiblioteca.dat", "wb");     //".dat" (Data File) indica que el archivo contiene datos binarios (structs, arrays o tipos de datos numericos)
+    
+    //Verificacion
+    if(f == NULL){
+        printf("Problema al crear el archivo!!\n");
+        return;
+    }
+
+    /*Los parametros para escribir con fwrite() son:
+    -puntero: direccion de la estructura
+    -tamaño: sizeof(struct) para asegurar que se escriben bien todos los bytes
+    -cantidad: numero de elementos (en este caso la cantidad en el array de structs)
+    -archivo: puntero FILE* devuelto por fopen
+    Finalmente se debe usar fclose()*/
+    size_t escritos = fwrite(coleccion, sizeof(Item), cantidad, f); //se usa size_t porque fwrite devuelve size_t
+
+    //Validar que se hayan escrito todos
+    if(escritos != cantidad){
+        printf("Error al guardar todos los datos\n");
+    }
+
+    fclose(f);
+    printf("Datos guardados correctamente\n");
+}
+
+void cargarArchivo(Item **coleccion, int *cantidad){
+    //Leer el archivo binario creado llamado "gestionBiblioteca.dat", Abrir en modo "rb = read binary" (Lectura y Binario)
+    FILE *f = fopen("gestionBiblioteca.dat", "rb");
+
+    //Verificacion
+    if(f == NULL){
+        printf("No hay datos previos\n");
+        return;
+    }
+
+    //Calcular cuantos elementos hay en el archivo
+    //1. Ir al final del archivo
+    fseek(f, 0, SEEK_END);
+
+    //2. Obtener el tamaño en bytes con la funcion ftell()
+    long tamaño = ftell(f);
+
+    //3. Calcular cantidad de Items
+    *cantidad = tamaño / sizeof(Item);
+
+    //4. Regresar al inicio
+    rewind(f);
+
+    //Reservar memoria
+    *coleccion = (Item*)malloc(*cantidad * sizeof(Item));
+    //Verificar la creacion de memoria
+    if(*coleccion == NULL){
+        printf("Error al asignar memoria\n");
+        fclose(f);
+        return;
+    }
+
+    //Los parametros para leer con fread() son los mismos que para fwrite()
+    fread(*coleccion, sizeof(Item), *cantidad, f);
+
+    fclose(f);
+    printf("Datos cargados correctamente\n");
 }
