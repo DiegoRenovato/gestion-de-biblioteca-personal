@@ -29,6 +29,7 @@ void cargarArchivo(Item **coleccion, int *cantidad);
 void menuBuscar(Item *coleccion, int cantidad);
 int buscarItem(Item *coleccion, int cantidad, int tipoBusqueda, void *valor);
 void modificarItem(Item *coleccion, int cantidad);
+void eliminarItem(Item **coleccion, int *cantidad);
 
 int main(int argc, char *argv[]){
     Item *coleccion = NULL;
@@ -55,8 +56,8 @@ void menu(Item **coleccion, int *cantidad){
         printf("1. Agregar Nuevo Item\n");
         printf("2. Buscar Item\n");
         printf("3. Mostrar Todos\n");
-        printf("4. Modificar Item (No disponible por el momento)\n");
-        printf("5. Eliminar Item (No disponible por el momento)\n");
+        printf("4. Modificar Item\n");
+        printf("5. Eliminar Item\n");
         printf("6. Guardar y salir\n");
         printf("Seleccione una opcion: ");
         scanf("%d", &opc);
@@ -81,10 +82,13 @@ void menu(Item **coleccion, int *cantidad){
         case 4:
             //printf("Modificar Item (No disponible por el momento)\n");
             modificarItem(*coleccion, *cantidad);
+            guardarArchivo(*coleccion, *cantidad);
             break;
 
         case 5:
-            printf("Eliminar Item (No disponible por el momento)\n");
+            //printf("Eliminar Item (No disponible por el momento)\n");
+            eliminarItem(coleccion, cantidad);
+            guardarArchivo(*coleccion, *cantidad);
             break;
 
         case 6:
@@ -394,6 +398,64 @@ void modificarItem(Item *coleccion, int cantidad){
     coleccion[pos].estado = (Estado)estado;
 
     printf("Item modificado correctamente\n");
+}
 
-    guardarArchivo(coleccion, cantidad);    //Guardar los datos modificados
+void eliminarItem(Item **coleccion, int *cantidad){
+    int id;
+
+    printf("Ingrese el ID del item a eliminar: ");
+    scanf("%d", &id);
+
+    int pos = buscarItem(*coleccion, *cantidad, 1, &id);
+
+    if(pos == -1){
+        printf("Item no encontrado\n");
+        return;
+    }
+
+    printf("\nItem encontrado:\n");
+    printf("ID: %d\n", (*coleccion)[pos].id);
+    printf("Titulo: %s\n", (*coleccion)[pos].titulo);
+    printf("Autor: %s\n", (*coleccion)[pos].autor);
+    printf("Anio: %d\n", (*coleccion)[pos].anio);
+    printf("Genero: %s\n", (*coleccion)[pos].genero);
+    printf("Estado: %s\n", (*coleccion)[pos].estado == DISPONIBLE ? "Disponible" : "Prestado");
+
+    //Confirmar la eliminacion del item
+    int confirmacion;
+    do{
+        printf("\nSeguro que deseas eliminar este item? (0 = Cancelar | 1 = Eliminar): ");
+        scanf("%d", &confirmacion);
+
+        if(confirmacion == 0){
+            printf("Eliminacion cancelada\n");
+            return;
+        }else if(confirmacion == 1){
+            //Desplazamos los elementos
+            for(int i = pos; i < *cantidad - 1; i++){
+                (*coleccion)[i] = (*coleccion)[i + 1];
+            }
+
+            //Reducimos el valor de cantidad en 1
+            (*cantidad)--;
+
+            //Reducimos memoria con realloc
+            Item *temp = (Item*)realloc(*coleccion, (*cantidad) * sizeof(Item));
+
+            //Validamos el realloc
+            if(temp != NULL || *cantidad == 0){
+                *coleccion = temp;
+            }
+
+            //Reasignamos los id's
+            for(int i = 0; i < *cantidad; i++){
+                (*coleccion)[i].id = i + 1;
+            }
+
+            printf("Item eliminado correctamente\n");
+        }else{
+            printf("Ingrese una opcion valida.\n");
+        }
+    }while(confirmacion != 0 && confirmacion != 1);
+    
 }
