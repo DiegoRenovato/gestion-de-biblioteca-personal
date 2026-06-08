@@ -4,6 +4,7 @@
 #include <iostream>
 #include <windows.h>
 #include <iomanip>
+#include <time.h>
 
 using namespace std;
 
@@ -16,6 +17,12 @@ enum Estado{
     PRESTADO
 };
 
+struct fechas{
+    int dia;
+    int mes;
+    int year;
+};
+
 struct Item{
     int id;
     char titulo[TAM_TITULO];
@@ -23,6 +30,7 @@ struct Item{
     int anio;
     char genero[TAM_GENERO];
     Estado estado;
+    fechas fecha;
 };
 
 //Prototipo de funciones
@@ -40,7 +48,10 @@ void buscarItem2(Item *coleccion, int cantidad, int tipoBusqueda, void *valor);
 void modificarItem(Item *coleccion, int cantidad);
 void eliminarItem(Item **coleccion, int *cantidad);
 void buzz(Item*, int);
-void imprimirEncabezado();
+void imprimirEncabezado(string titulo = "RESULTADO BUSQUEDA");
+void reportes(Item*, int, int, int);
+void menuReportes(Item*, int);
+string nombreMes(int);
 
 int main(int argc, char *argv[]){
     SetConsoleOutputCP(CP_UTF8);
@@ -73,7 +84,12 @@ void menu(Item **coleccion, int *cantidad){
 
     do{
         system("cls || clear");
-        system("color 09");
+        system("color 0B");
+        //system("color 02"); -> verde
+        //system("color 03"); -> aqua
+        //system("color 0A"); -> verde claro
+        //system("color 0B"); -> aqua claro
+        //system("color 0E"); -> amarillo claro
         cout << "╔══════════════════════════════════╗\n";
         cout << "║      BIBLIOTECA PERSONAL         ║\n";
         cout << "╠══════════════════════════════════╣\n";
@@ -82,7 +98,8 @@ void menu(Item **coleccion, int *cantidad){
         cout << "║  3) Mostrar Todos                ║\n";
         cout << "║  4) Modificar Item               ║\n";
         cout << "║  5) Eliminar Item                ║\n";
-        cout << "║  6) Guardar y Salir              ║\n";
+        cout << "║  6) Reportes                     ║\n";
+        cout << "║  7) Guardar y Salir              ║\n";
         cout << "╠══════════════════════════════════╣\n";
         cout << "║  Seleccione una opción:          ║\n";
         cout << "╚══════════════════════════════════╝\n";
@@ -124,6 +141,10 @@ void menu(Item **coleccion, int *cantidad){
             break;
 
         case 6:
+            menuReportes(*coleccion, *cantidad);
+            break;
+
+        case 7:
             system("cls || clear");
             cicloProgreso();
             guardarArchivo(*coleccion, *cantidad);
@@ -135,11 +156,23 @@ void menu(Item **coleccion, int *cantidad){
             printf("Opcion no valida. Ingrese una opcion disponible nuevamente\n");
             break;
         }
-    }while(opc != 6);
+    }while(opc != 7);
 }
 
 void agregarItem(Item **coleccion, int *cantidad, int n){
     int estado;
+    time_t t;
+    struct tm *fecha;
+
+    // Obtener tiempo actual
+    t = time(NULL);
+
+    // Convertir a fecha local
+    fecha = localtime(&t);
+
+    int dia = fecha->tm_mday;
+    int mes = fecha->tm_mon + 1;   // tm_mon va de 0 a 11
+    int year = fecha->tm_year + 1900; // tm_year cuenta desde 1900
 
     *coleccion = (Item*)realloc(*coleccion, (*cantidad + n) * sizeof(Item));
 
@@ -162,7 +195,6 @@ void agregarItem(Item **coleccion, int *cantidad, int n){
             cout << "║               " << i + 1 <<"                 ║\n";
             cout << "╚══════════════════════════════════╝\n";
         }
-        
         
         //Usuario ingresa Titulo
         printf("Ingrese el Titulo del Item: ");
@@ -193,8 +225,13 @@ void agregarItem(Item **coleccion, int *cantidad, int n){
         }while(estado != 0 && estado != 1);
         (*coleccion + i)->estado = (Estado)estado;
 
+        (*coleccion + i)->fecha.dia = dia;
+        (*coleccion + i)->fecha.mes = mes;
+        (*coleccion + i)->fecha.year = year;
+
         //id incrementa automaticamente
         (*coleccion + i)->id = i + 1;
+
     }
 
     *cantidad += n;
@@ -348,25 +385,27 @@ void buscarItem2(Item *coleccion, int cantidad, int tipoBusqueda, void *valor){
         bool match = false;
 
         switch(tipoBusqueda) {
-        case 1: // ID
+
+        case 1: // Buscar por ID (exacta)
             match = (coleccion[i].id == *(int*)valor);
             break;
 
-        case 2: // Titulo
-            match = (strcmp(coleccion[i].titulo, (char*)valor) == 0);
+        case 2: // Buscar por titulo (parcial)
+            match = (strstr(coleccion[i].titulo, (char*)valor) != NULL);
             break;
 
-        case 3: // Autor
-            match = (strcmp(coleccion[i].autor, (char*)valor) == 0);
+        case 3: // Buscar por autor (parcial)
+            match = (strstr(coleccion[i].autor, (char*)valor) != NULL);
             break;
 
-        case 4: // Genero
-            match = (strcmp(coleccion[i].genero, (char*)valor) == 0);
+        case 4: // Buscar por genero (parcial)
+            match = (strstr(coleccion[i].genero, (char*)valor) != NULL);
             break;
 
-        case 5: // Estado
+        case 5: // Buscar por estado (exacta)
             match = (coleccion[i].estado == *(int*)valor);
             break;
+
         }
 
         if(match) {
@@ -375,6 +414,7 @@ void buscarItem2(Item *coleccion, int cantidad, int tipoBusqueda, void *valor){
                 imprimirEncabezado();
                 encontrado = true;
             }
+
             buzz(coleccion, i);
         }
     }
@@ -382,8 +422,6 @@ void buscarItem2(Item *coleccion, int cantidad, int tipoBusqueda, void *valor){
     if(!encontrado) {
         cout << "\nItem no encontrado\n";
     }
-
-    
 }
 
 void menuBuscar(Item *coleccion, int cantidad){
@@ -632,11 +670,21 @@ void buzz(Item *coleccion, int pos){
         << endl;
 }
 
-void imprimirEncabezado(){
+void imprimirEncabezado(string titulo){
+    const int anchoInterno = 34;
+
+    int espacios = anchoInterno - titulo.length();
+    int izq = espacios / 2;
+    int der = espacios - izq;
+
     cout << "\n╔══════════════════════════════════╗\n";
-    cout << "║        RESULTADO BUSQUEDA        ║\n";
+    cout << "║"
+         << string(izq, ' ')
+         << titulo
+         << string(der, ' ')
+         << "║\n";
     cout << "╚══════════════════════════════════╝\n";
-            
+
     cout << left
         << setw(5) << "ID"
         << setw(35) << "Titulo"
@@ -645,6 +693,7 @@ void imprimirEncabezado(){
         << setw(15) << "Genero"
         << setw(16) << "Estado"
         << endl;
+
     cout << string(92,'-') << endl;
 }
 
@@ -669,7 +718,7 @@ void mostrarProgreso(double progreso) {
 }
 
 void pausa() {
-    for(long i = 0; i < 50000000; i++) {
+    for(long i = 0; i < 4000000; i++) {
         // ciclo vacío para retraso
     }
 }
@@ -685,4 +734,117 @@ void cicloProgreso(){
     }
 
     cout << "\nProceso completado exitosamente.\n";
+}
+
+void menuReportes(Item *coleccion, int cantidad){
+    int opc, m, y;
+    time_t t;
+    struct tm *fecha;
+
+    // Obtener tiempo actual
+    t = time(NULL);
+
+    // Convertir a fecha local
+    fecha = localtime(&t);
+
+    int mes = fecha->tm_mon + 1;   // tm_mon va de 0 a 11
+
+    do{
+        system("cls || clear");
+        cout << "\n";
+        cout << "╔══════════════════════════════════╗\n";
+        cout << "║             REPORTES             ║\n";
+        cout << "╠══════════════════════════════════╣\n";
+        cout << "║  1) Mes actual                   ║\n";
+        cout << "║  2) Por mes                      ║\n";
+        cout << "║  3) Por año                      ║\n";
+        cout << "║  4) Regresar al menu principal   ║\n";
+        cout << "╠══════════════════════════════════╣\n";
+        cout << "║  Seleccione una opción:          ║\n";
+        cout << "╚══════════════════════════════════╝\n";
+        cout << "➜ ";
+        scanf("%d", &opc);
+        cout << "\n";
+
+        switch(opc){
+            case 1:
+                reportes(coleccion, cantidad, mes, opc);
+                break;
+            case 2:
+                cout << "Ingrese mes (1-12): ";
+                cin >> m;
+                reportes(coleccion, cantidad, m, opc);
+                break;
+            case 3:
+                cout << "Ingrese año (0000): ";
+                cin >> y;
+                reportes(coleccion, cantidad, y, opc);
+                break;
+            case 4: 
+                return;
+                break;
+            default: 
+                cout << "\nOpcion invalida...";
+                break;
+        }
+
+        //Mostrar la informacion del item encontrado
+        cout << "\n\nPresione ENTER para continuar...";
+        getchar(); getchar();
+
+    }while(opc != 4);
+}
+
+string nombreMes(int mes){
+    string meses[] = {
+        "ENERO", "FEBRERO", "MARZO", "ABRIL",
+        "MAYO", "JUNIO", "JULIO", "AGOSTO",
+        "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"
+    };
+
+    if(mes >= 1 && mes <= 12)
+        return meses[mes - 1];
+
+    return "MES INVALIDO";
+}
+
+void reportes(Item *coleccion, int cantidad, int p, int opc){
+    bool encontrado = false;
+    string tituloReporte;
+
+    time_t t;
+    struct tm *fecha;
+    // Obtener tiempo actual
+    t = time(NULL);
+    // Convertir a fecha local
+    fecha = localtime(&t);
+    int year = fecha->tm_year + 1900; // tm_year cuenta desde 1900
+
+    for(int i = 0; i < cantidad; i++) {
+        bool match = false;
+
+        if(opc == 1 || opc == 2){
+            match = (coleccion[i].fecha.mes == p && coleccion[i].fecha.year == year);
+            tituloReporte = nombreMes(p);
+        }
+
+        if(opc == 3){
+            match = (coleccion[i].fecha.year == p);
+            tituloReporte = to_string(p);
+        }
+
+        if(match) {
+            if(!encontrado) {
+                cicloProgreso();
+                imprimirEncabezado(tituloReporte);
+                encontrado = true;
+            }
+
+            buzz(coleccion, i);
+        }
+    }
+
+    if(!encontrado) {
+        cout << "\nItem no encontrado\n";
+    }
 }
