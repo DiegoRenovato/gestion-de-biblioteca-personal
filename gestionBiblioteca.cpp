@@ -1,6 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <iostream>
+#include <windows.h>
+#include <iomanip>
+
+using namespace std;
 
 #define TAM_TITULO 100
 #define TAM_AUTOR 50
@@ -22,27 +27,42 @@ struct Item{
 
 //Prototipo de funciones
 void menu(Item **coleccion, int *cantidad);
+void mostrarProgreso(double);
+void pausa();
+void cicloProgreso();
 void agregarItem(Item **coleccion, int *cantidad, int n);
 void mostrarItems(Item *coleccion, int cantidad);
 void guardarArchivo(Item *coleccion, int cantidad);
 void cargarArchivo(Item **coleccion, int *cantidad);
 void menuBuscar(Item *coleccion, int cantidad);
 int buscarItem(Item *coleccion, int cantidad, int tipoBusqueda, void *valor);
+void buscarItem2(Item *coleccion, int cantidad, int tipoBusqueda, void *valor);
 void modificarItem(Item *coleccion, int cantidad);
 void eliminarItem(Item **coleccion, int *cantidad);
+void buzz(Item*, int);
+void imprimirEncabezado();
 
 int main(int argc, char *argv[]){
+    SetConsoleOutputCP(CP_UTF8);
+    SetConsoleCP(CP_UTF8);
+
     Item *coleccion = NULL;
     int cantidad = 0;
 
+    cicloProgreso();
+
     //1. Cargar archivo (puede que no haya datos previos, o datos cargados correctamente)
     cargarArchivo(&coleccion, &cantidad);
+    cout << "Presione ENTER para continuar...";
+    getchar();
 
     //2. Llamar al menu
     menu(&coleccion, &cantidad);
 
     //3. Liberar memoria
     free(coleccion);
+
+    getchar(); getchar();
 
     return 0;
 }
@@ -52,20 +72,28 @@ void menu(Item **coleccion, int *cantidad){
     int opc, n=0;
 
     do{
-        printf("MENU\n\n");
-        printf("1. Agregar Nuevo Item\n");
-        printf("2. Buscar Item\n");
-        printf("3. Mostrar Todos\n");
-        printf("4. Modificar Item\n");
-        printf("5. Eliminar Item\n");
-        printf("6. Guardar y salir\n");
-        printf("Seleccione una opcion: ");
+        system("cls || clear");
+        system("color 09");
+        cout << "╔══════════════════════════════════╗\n";
+        cout << "║      BIBLIOTECA PERSONAL         ║\n";
+        cout << "╠══════════════════════════════════╣\n";
+        cout << "║  1) Agregar Nuevo Item           ║\n";
+        cout << "║  2) Buscar Item                  ║\n";
+        cout << "║  3) Mostrar Todos                ║\n";
+        cout << "║  4) Modificar Item               ║\n";
+        cout << "║  5) Eliminar Item                ║\n";
+        cout << "║  6) Guardar y Salir              ║\n";
+        cout << "╠══════════════════════════════════╣\n";
+        cout << "║  Seleccione una opción:          ║\n";
+        cout << "╚══════════════════════════════════╝\n";
+        cout << "➜ ";
         scanf("%d", &opc);
 
         switch (opc){
         case 1:
-            printf("Ingrese numero de items que desea agregar: ");
+            printf("\nIngrese numero de items que desea agregar: ");
             scanf("%d", &n);
+            system("cls || clear");
             agregarItem(coleccion, cantidad, n);
             break;
 
@@ -75,7 +103,11 @@ void menu(Item **coleccion, int *cantidad){
             break;
 
         case 3:
-            printf("MOSTRANDO ITEMS\n");
+            system("cls || clear");
+            cicloProgreso();
+            cout << "\n╔══════════════════════════════════╗\n";
+            cout << "║         MOSTRANDO ITEMS          ║\n";
+            cout << "╚══════════════════════════════════╝\n";
             mostrarItems(*coleccion, *cantidad);
             break;
 
@@ -92,6 +124,8 @@ void menu(Item **coleccion, int *cantidad){
             break;
 
         case 6:
+            system("cls || clear");
+            cicloProgreso();
             guardarArchivo(*coleccion, *cantidad);
             printf("Saliendo...\n");
             system("pause");
@@ -114,7 +148,21 @@ void agregarItem(Item **coleccion, int *cantidad, int n){
         return;
     }
 
+    cout << "\n╔══════════════════════════════════╗\n";
+    cout << "║          AGREGAR NUEVOS          ║\n";
+    cout << "╚══════════════════════════════════╝\n";
+
     for(int i = *cantidad; i < *cantidad + n; i++){
+        if((i + 1) < 10){
+            cout << "\n╔══════════════════════════════════╗\n";
+            cout << "║                " << i + 1 <<"                 ║\n";
+            cout << "╚══════════════════════════════════╝\n";
+        }else{
+            cout << "\n╔══════════════════════════════════╗\n";
+            cout << "║               " << i + 1 <<"                 ║\n";
+            cout << "╚══════════════════════════════════╝\n";
+        }
+        
         
         //Usuario ingresa Titulo
         printf("Ingrese el Titulo del Item: ");
@@ -150,28 +198,41 @@ void agregarItem(Item **coleccion, int *cantidad, int n){
     }
 
     *cantidad += n;
+
+    cout << "\nPresione ENTER para agregar nuevos elementos...";
+    getchar(); getchar();
+
+    cicloProgreso();
+
+
 }
 
 void mostrarItems(Item *coleccion, int cantidad){
-    printf("\n%-5s %-20s %-15s %-6s %-15s %-12s\n",     //Formatear la salida de texto, despues sera modificado
-            "ID", "TITULO", "AUTOR", "ANIO", "GENERO", "ESTADO");
-
-    printf("------------------------------------------------------------------------\n");
+    cout << left
+        << setw(5) << "ID"
+        << setw(35) << "Titulo"
+        << setw(15) << "Autor"
+        << setw(6) << "Año"
+        << setw(15) << "Genero"
+        << setw(16) << "Estado"
+        << endl;
+    cout << string(92,'-') << endl;
 
     for(int i = 0; i < cantidad; i++){
-        printf("%-5d ", (coleccion + i)->id);
-        printf("%-20s ", (coleccion + i)->titulo);
-        printf("%-15s ", (coleccion + i)->autor);
-        printf("%-6d ", (coleccion + i)->anio);
-        printf("%-15s ", (coleccion + i)->genero);
 
-        if((coleccion + i)->estado == DISPONIBLE){
-            printf("Disponible");
-        }else if((coleccion + i)->estado == PRESTADO){
-            printf("Prestado");
-        }
+        cout << left
+            << setw(5) << (coleccion + i)->id
+            << setw(35) << (coleccion + i)->titulo
+            << setw(15) << (coleccion + i)->autor
+            << setw(6) << (coleccion + i)->anio
+            << setw(15) << (coleccion + i)->genero
+            << setw(16) << ((coleccion + i)->estado == DISPONIBLE ? "Disponible" : "Prestado")
+            << endl;
     }
     printf("\n");
+
+    cout << "Presione ENTER para continuar...";
+    getchar(); getchar();
 }
 
 void guardarArchivo(Item *coleccion, int cantidad){
@@ -186,7 +247,7 @@ void guardarArchivo(Item *coleccion, int cantidad){
 
     /*Los parametros para escribir con fwrite() son:
     -puntero: direccion de la estructura
-    -tamaño: sizeof(struct) para asegurar que se escriben bien todos los bytes
+    -tamano: sizeof(struct) para asegurar que se escriben bien todos los bytes
     -cantidad: numero de elementos (en este caso la cantidad en el array de structs)
     -archivo: puntero FILE* devuelto por fopen
     Finalmente se debe usar fclose()*/
@@ -207,7 +268,7 @@ void cargarArchivo(Item **coleccion, int *cantidad){
 
     //Verificacion
     if(f == NULL){
-        printf("No hay datos previos\n");
+        printf("No hay datos previos\n\n");
         return;
     }
 
@@ -215,11 +276,11 @@ void cargarArchivo(Item **coleccion, int *cantidad){
     //1. Ir al final del archivo
     fseek(f, 0, SEEK_END);
 
-    //2. Obtener el tamaño en bytes con la funcion ftell()
-    long tamaño = ftell(f);
+    //2. Obtener el tamano en bytes con la funcion ftell()
+    long tamano = ftell(f);
 
     //3. Calcular cantidad de Items
-    *cantidad = tamaño / sizeof(Item);
+    *cantidad = tamano / sizeof(Item);
 
     //4. Regresar al inicio
     rewind(f);
@@ -228,7 +289,7 @@ void cargarArchivo(Item **coleccion, int *cantidad){
     *coleccion = (Item*)malloc(*cantidad * sizeof(Item));
     //Verificar la creacion de memoria
     if(*coleccion == NULL){
-        printf("Error al asignar memoria\n");
+        printf("Error al asignar memoria\n\n");
         fclose(f);
         return;
     }
@@ -237,42 +298,41 @@ void cargarArchivo(Item **coleccion, int *cantidad){
     fread(*coleccion, sizeof(Item), *cantidad, f);
 
     fclose(f);
-    printf("Datos cargados correctamente\n");
+    printf("Datos cargados correctamente\n\n");
 }
 
 int buscarItem(Item *coleccion, int cantidad, int tipoBusqueda, void *valor){
-    
     for(int i = 0; i < cantidad; i++){
 
         switch(tipoBusqueda){
         //Buscar en ID
         case 1:
             if(coleccion[i].id == *(int*)valor)
-                return i;   //Retornar posicion del arreglo de estructuras donde se haya encontrado el item
+                return i;
             break;
 
         //Buscar en Titulo
         case 2:
             if(strcmp(coleccion[i].titulo, (char*)valor) == 0)
-                return i;   //Retornar posicion del arreglo de estructuras donde se haya encontrado el item
+                return i;
             break;
 
         //Buscar en Autor
         case 3:
             if(strcmp(coleccion[i].autor, (char*)valor) == 0)
-                return i;   //Retornar posicion del arreglo de estructuras donde se haya encontrado el item
+                return i;
             break;
 
         //Buscar en Genero
         case 4:
             if(strcmp(coleccion[i].genero, (char*)valor) == 0)
-                return i;   //Retornar posicion del arreglo de estructuras donde se haya encontrado el item
+                return i;
             break;
 
         //Buscar en Estado
         case 5:
             if(coleccion[i].estado == *(int*)valor)
-                return i;   //Retornar posicion del arreglo de estructuras donde se haya encontrado el item
+                return i;
             break;
         }
     }
@@ -280,32 +340,85 @@ int buscarItem(Item *coleccion, int cantidad, int tipoBusqueda, void *valor){
     return -1;
 }
 
+void buscarItem2(Item *coleccion, int cantidad, int tipoBusqueda, void *valor){
+    
+    bool encontrado = false;
+
+    for(int i = 0; i < cantidad; i++) {
+        bool match = false;
+
+        switch(tipoBusqueda) {
+        case 1: // ID
+            match = (coleccion[i].id == *(int*)valor);
+            break;
+
+        case 2: // Titulo
+            match = (strcmp(coleccion[i].titulo, (char*)valor) == 0);
+            break;
+
+        case 3: // Autor
+            match = (strcmp(coleccion[i].autor, (char*)valor) == 0);
+            break;
+
+        case 4: // Genero
+            match = (strcmp(coleccion[i].genero, (char*)valor) == 0);
+            break;
+
+        case 5: // Estado
+            match = (coleccion[i].estado == *(int*)valor);
+            break;
+        }
+
+        if(match) {
+            if(!encontrado) {
+                cicloProgreso();
+                imprimirEncabezado();
+                encontrado = true;
+            }
+            buzz(coleccion, i);
+        }
+    }
+
+    if(!encontrado) {
+        cout << "\nItem no encontrado\n";
+    }
+
+    
+}
+
 void menuBuscar(Item *coleccion, int cantidad){
     int opc;
 
     do{
-        printf("\n=== BUSCAR ITEM ===\n");
-        printf("1. Por ID\n");
-        printf("2. Por Titulo\n");
-        printf("3. Por Autor\n");
-        printf("4. Por Genero\n");
-        printf("5. Por Estado\n");
-        printf("6. Regresar al menu principal\n");
-        printf("Seleccione una opcion: ");
+        system("cls || clear");
+        cout << "\n";
+        cout << "╔══════════════════════════════════╗\n";
+        cout << "║             BUSQUEDA             ║\n";
+        cout << "╠══════════════════════════════════╣\n";
+        cout << "║  1) Por ID                       ║\n";
+        cout << "║  2) Por Titulo                   ║\n";
+        cout << "║  3) Por Autor                    ║\n";
+        cout << "║  4) Por Genero                   ║\n";
+        cout << "║  5) Por Estado                   ║\n";
+        cout << "║  6) Regresar al menu principal   ║\n";
+        cout << "╠══════════════════════════════════╣\n";
+        cout << "║  Seleccione una opción:          ║\n";
+        cout << "╚══════════════════════════════════╝\n";
+        cout << "➜ ";
         scanf("%d", &opc);
+        cout << "\n";
 
         if(opc == 6){
             return;     //Regresar a menu principal
         }
 
-        int pos = -1;
 
         //Buscar Item por ID
         if(opc == 1){
             int id;
             printf("Ingrese ID: ");
             scanf("%d", &id);
-            pos = buscarItem(coleccion, cantidad, 1, &id);
+            buscarItem2(coleccion, cantidad, 1, &id);
         }
 
         //Buscar Item por Titulo, Autor ó Genero
@@ -316,7 +429,7 @@ void menuBuscar(Item *coleccion, int cantidad){
             fgets(texto, 100, stdin);
             texto[strcspn(texto, "\n")] = '\0';
 
-            pos = buscarItem(coleccion, cantidad, opc, texto);
+            buscarItem2(coleccion, cantidad, opc, texto);
         }
 
         //Buscar Item por Estado
@@ -324,21 +437,12 @@ void menuBuscar(Item *coleccion, int cantidad){
             int estado;
             printf("Estado (0=Disponible, 1=Prestado): ");
             scanf("%d", &estado);
-            pos = buscarItem(coleccion, cantidad, 5, &estado);
+            buscarItem2(coleccion, cantidad, 5, &estado);
         }
 
         //Mostrar la informacion del item encontrado
-        if(pos != -1){
-            printf("\nItem encontrado:\n");
-            printf("ID: %d\n", coleccion[pos].id);
-            printf("Titulo: %s\n", coleccion[pos].titulo);
-            printf("Autor: %s\n", coleccion[pos].autor);
-            printf("Anio: %d\n", coleccion[pos].anio);
-            printf("Genero: %s\n", coleccion[pos].genero);
-            printf("Estado: %s\n", coleccion[pos].estado == DISPONIBLE ? "Disponible" : "Prestado");
-        } else {
-            printf("Item no encontrado\n");
-        }
+        cout << "\n\nPresione ENTER para continuar...";
+        getchar(); getchar();
 
     }while(1);
 }
@@ -352,20 +456,43 @@ void modificarItem(Item *coleccion, int cantidad){
     //Reutilizar la funcion buscarItem y guardar la posicion donde se encuentre el Item
     pos = buscarItem(coleccion, cantidad, 1, &id);
 
+    system("cls || clear");
+
     if(pos == -1){
         printf("Item no encontrado\n");
+        cout << "\nPresione ENTER para continuar...";
+        getchar(); getchar();
         return;
     }
+    cicloProgreso();
 
     //Mostrar los datos del Item encontrado
-    printf("\nItem encontrado:\n");
-    printf("Titulo: %s\n", coleccion[pos].titulo);
-    printf("Autor: %s\n", coleccion[pos].autor);
-    printf("Anio: %d\n", coleccion[pos].anio);
-    printf("Genero: %s\n", coleccion[pos].genero);
-    printf("Estado: %s\n", coleccion[pos].estado == DISPONIBLE ? "Disponible" : "Prestado");
+    cout << "\n╔══════════════════════════════════╗\n";
+    cout << "║          ITEM ENCONTRADO         ║\n";
+    cout << "╚══════════════════════════════════╝\n";
 
-    printf("\n--- Ingrese los nuevos datos ---\n");
+    cout << left
+        << setw(35) << "Titulo"
+        << setw(15) << "Autor"
+        << setw(6) << "Año"
+        << setw(15) << "Genero"
+        << setw(16) << "Estado"
+        << endl;
+    cout << string(87,'-') << endl;
+
+    cout << left
+        << setw(35) << coleccion[pos].titulo
+        << setw(15) << coleccion[pos].autor
+        << setw(6) << coleccion[pos].anio
+        << setw(15) << coleccion[pos].genero
+        << setw(16) << (coleccion[pos].estado == DISPONIBLE ? "Disponible" : "Prestado")
+        << endl;
+
+
+    cout << "\n╔══════════════════════════════════╗\n";
+    cout << "║           NUEVOS DATOS           ║\n";
+    cout << "╚══════════════════════════════════╝\n";
+
 
     //Nuevo titulo
     printf("Nuevo titulo: ");
@@ -397,10 +524,17 @@ void modificarItem(Item *coleccion, int cantidad){
 
     coleccion[pos].estado = (Estado)estado;
 
+    system("cls || clear");
+    cicloProgreso();
+
     printf("Item modificado correctamente\n");
+
+    cout << "\nPresione ENTER para continuar...";
+    getchar(); getchar();
 }
 
 void eliminarItem(Item **coleccion, int *cantidad){
+
     int id;
 
     printf("Ingrese el ID del item a eliminar: ");
@@ -408,18 +542,38 @@ void eliminarItem(Item **coleccion, int *cantidad){
 
     int pos = buscarItem(*coleccion, *cantidad, 1, &id);
 
+    system("cls || clear");
+
     if(pos == -1){
         printf("Item no encontrado\n");
+        cout << "\nPresione ENTER para continuar...";
+        getchar(); getchar();
         return;
     }
+    cicloProgreso();
 
-    printf("\nItem encontrado:\n");
-    printf("ID: %d\n", (*coleccion)[pos].id);
-    printf("Titulo: %s\n", (*coleccion)[pos].titulo);
-    printf("Autor: %s\n", (*coleccion)[pos].autor);
-    printf("Anio: %d\n", (*coleccion)[pos].anio);
-    printf("Genero: %s\n", (*coleccion)[pos].genero);
-    printf("Estado: %s\n", (*coleccion)[pos].estado == DISPONIBLE ? "Disponible" : "Prestado");
+    cout << "\n╔══════════════════════════════════╗\n";
+    cout << "║          ITEM ENCONTRADO         ║\n";
+    cout << "╚══════════════════════════════════╝\n";
+
+    cout << left
+        << setw(5) << "ID"
+        << setw(35) << "Titulo"
+        << setw(15) << "Autor"
+        << setw(6) << "Año"
+        << setw(15) << "Genero"
+        << setw(16) << "Estado"
+        << endl;
+    cout << string(87,'-') << endl;
+
+    cout << left
+        << setw(5) << (*coleccion)[pos].id
+        << setw(35) << (*coleccion)[pos].titulo
+        << setw(15) << (*coleccion)[pos].autor
+        << setw(6) << (*coleccion)[pos].anio
+        << setw(15) << (*coleccion)[pos].genero
+        << setw(16) << ((*coleccion)[pos].estado == DISPONIBLE ? "Disponible" : "Prestado")
+        << endl;
 
     //Confirmar la eliminacion del item
     int confirmacion;
@@ -428,7 +582,9 @@ void eliminarItem(Item **coleccion, int *cantidad){
         scanf("%d", &confirmacion);
 
         if(confirmacion == 0){
-            printf("Eliminacion cancelada\n");
+            printf("\nEliminacion cancelada\n");
+            cout << "\nPresione ENTER para continuar...";
+            getchar(); getchar();
             return;
         }else if(confirmacion == 1){
             //Desplazamos los elementos
@@ -451,11 +607,82 @@ void eliminarItem(Item **coleccion, int *cantidad){
             for(int i = 0; i < *cantidad; i++){
                 (*coleccion)[i].id = i + 1;
             }
+            cicloProgreso();
 
             printf("Item eliminado correctamente\n");
+            cout << "\nPresione ENTER para continuar...";
+            getchar(); getchar();
         }else{
             printf("Ingrese una opcion valida.\n");
+            cout << "\nPresione ENTER para continuar...";
+            getchar(); getchar();
         }
     }while(confirmacion != 0 && confirmacion != 1);
     
+}
+
+void buzz(Item *coleccion, int pos){
+    cout << left
+        << setw(5) << coleccion[pos].id
+        << setw(35) << coleccion[pos].titulo
+        << setw(15) << coleccion[pos].autor
+        << setw(6) << coleccion[pos].anio
+        << setw(15) << coleccion[pos].genero
+        << setw(16) << (coleccion[pos].estado == DISPONIBLE ? "Disponible" : "Prestado")
+        << endl;
+}
+
+void imprimirEncabezado(){
+    cout << "\n╔══════════════════════════════════╗\n";
+    cout << "║        RESULTADO BUSQUEDA        ║\n";
+    cout << "╚══════════════════════════════════╝\n";
+            
+    cout << left
+        << setw(5) << "ID"
+        << setw(35) << "Titulo"
+        << setw(15) << "Autor"
+        << setw(6) << "Año"
+        << setw(15) << "Genero"
+        << setw(16) << "Estado"
+        << endl;
+    cout << string(92,'-') << endl;
+}
+
+void mostrarProgreso(double progreso) {
+    const int anchoBarra = 50;
+
+    cout << "\r[";
+    
+    int posicion = progreso * anchoBarra;
+
+    for (int i = 0; i < anchoBarra; i++) {
+        if (i < posicion)
+            cout << "=";
+        else if (i == posicion)
+            cout << ">";
+        else
+            cout << " ";
+    }
+
+    cout << "] " << int(progreso * 100) << "%";
+    cout.flush();
+}
+
+void pausa() {
+    for(long i = 0; i < 50000000; i++) {
+        // ciclo vacío para retraso
+    }
+}
+
+void cicloProgreso(){
+    int total = 100;
+
+    for (int i = 0; i <= total; i++) {
+        double progreso = (double)i / total;
+        mostrarProgreso(progreso);
+
+        pausa();
+    }
+
+    cout << "\nProceso completado exitosamente.\n";
 }
